@@ -320,8 +320,8 @@ export default function GymApp() {
         
         input, select { font-family: 'Inter', sans-serif; color: #0F172A; outline: none; }
         input:focus, select:focus {
-          border-color: #6366F1 !important;
-          box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+          border-color: #10B981 !important;
+          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
         }
         
         button { cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); font-family: 'Inter', sans-serif; }
@@ -340,7 +340,7 @@ export default function GymApp() {
         }
         .btn-glow:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(99, 102, 241, 0.25);
+          box-shadow: 0 6px 20px rgba(16, 185, 129, 0.25);
           filter: brightness(1.05);
         }
         .btn-glow:active {
@@ -364,14 +364,14 @@ export default function GymApp() {
           transition: all 0.2s ease;
         }
         .tab-btn:hover {
-          background: #F8FAFC;
-          color: #6366F1;
+          background: #F0FDF4;
+          color: #10B981;
         }
         .tab-btn-active {
-          background: rgba(99, 102, 241, 0.08) !important;
-          color: #6366F1 !important;
+          background: rgba(16, 185, 129, 0.1) !important;
+          color: #059669 !important;
           font-weight: 600;
-          border-right: 3px solid #6366F1;
+          border-right: 3px solid #10B981;
         }
 
         .card-glow {
@@ -8964,22 +8964,22 @@ const S = {
     transition: "all 0.2s ease",
   },
   btnPrimary: {
-    background: "#6366F1", // Modern bright violet accent
+    background: "#10B981", // Modern vibrant emerald green accent
     color: "#FFFFFF",
     border: "none",
     borderRadius: 8,
     padding: "10px 22px",
     fontSize: 13.5,
     fontWeight: 700,
-    boxShadow: "0 4px 14px rgba(99,102,241,0.25)",
+    boxShadow: "0 4px 14px rgba(16,185,129,0.25)",
   },
   btnGhost: {
     background: "transparent",
-    border: "1px solid #6366F1",
+    border: "1px solid #10B981",
     borderRadius: 8,
     padding: "6px 14px",
     fontSize: 12.5,
-    color: "#6366F1",
+    color: "#10B981",
   },
   btnFilter: {
     background: "#FFFFFF",
@@ -8991,9 +8991,9 @@ const S = {
     fontWeight: 500,
   },
   btnFilterActive: {
-    background: "#EEF2F6",
-    border: "1px solid #6366F1",
-    color: "#6366F1",
+    background: "#ECFDF5",
+    border: "1px solid #10B981",
+    color: "#059669",
     fontWeight: 600,
   },
   listRow: {
