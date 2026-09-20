@@ -122,6 +122,7 @@ export default function GymApp() {
   const [cardTiers, setCardTiers] = useState(CARD_TIERS_DEFAULT);
   const [loaded, setLoaded] = useState(false);
   const [toast, setToast] = useState("");
+  const [showGuide, setShowGuide] = useState(false);
 
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [loginError, setLoginError] = useState("");
@@ -396,6 +397,34 @@ export default function GymApp() {
           border: 1px solid #E2E8F0;
           box-shadow: 0 12px 32px rgba(0,0,0,0.12);
           animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Quick Start Guide Button in Green */
+        .btn-green-guide {
+          background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+          color: #FFFFFF;
+          border: none;
+          padding: 10px 18px;
+          border-radius: 10px;
+          font-size: 13.5px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+          width: 100%;
+          margin-bottom: 14px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .btn-green-guide:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+          background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+        .btn-green-guide:active {
+          transform: translateY(0);
         }
 
         /* Printable thermal receipt & A4 sheet styling */
@@ -681,6 +710,10 @@ export default function GymApp() {
         </div>
       )}
 
+      {/* Interactive Quick Start Guide Modal */}
+      {showGuide && (
+        <GuideModal onClose={() => setShowGuide(false)} />
+      )}
 
       {/* View router switcher */}
       {view === "affiche" && (
@@ -752,6 +785,12 @@ export default function GymApp() {
               <div style={S.brandSub}>GESTION DE SALLE &bull; DIVO</div>
             </div>
 
+            {/* Quick Start Guide Button (Green) */}
+            <div style={{ paddingRight: 20 }}>
+              <button className="btn-green-guide" onClick={() => setShowGuide(true)}>
+                <span>🚀</span> Guide de démarrage
+              </button>
+            </div>
             
             <nav style={S.nav}>
               {getFilteredTabs().map((tItem) => (
@@ -888,6 +927,159 @@ export default function GymApp() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// ==========================================
+// INTERACTIVE GUIDE MODAL COMPONENT
+// ==========================================
+function GuideModal({ onClose }) {
+  const [activeStep, setActiveStep] = useState(0);
+
+  const steps = [
+    {
+      title: "1. Présentation Générale",
+      content: (
+        <div>
+          <p style={S.guideText}>Bienvenue sur <strong>CLUB SPORT SANTE</strong>, la plateforme SaaS d'élite pour la gestion de votre salle de sport à Divo.</p>
+          <p style={S.guideText}>L'application s'articule autour de 3 rôles métiers majeurs :</p>
+          <ul style={S.guideList}>
+            <li>🔑 <strong>Administrateur</strong> (accès complet, gestion des salariés et des comptes utilisateurs)</li>
+            <li>📝 <strong>Secrétaire</strong> (inscriptions et guichet d'accueil)</li>
+            <li>💰 <strong>Comptable</strong> (gestion financière et salaires)</li>
+          </ul>
+          <p style={S.guideText}>Les sections de ce guide vous expliquent pas à pas les flux clés de l'application.</p>
+        </div>
+      )
+    },
+    {
+      title: "2. Flux Secrétaire : Membres & Cartes",
+      content: (
+        <div>
+          <p style={S.guideText}><strong>Rôle requis :</strong> Secrétaire ou Administrateur.</p>
+          <ol style={S.guideList}>
+            <li>Allez sur l'onglet <strong style={{ color: "#10B981" }}>Membres & Cartes</strong>.</li>
+            <li>Remplissez le formulaire d'inscription (Nom, Téléphone, Niveau de Carte).</li>
+            <li>Sélectionnez la carte : <strong>Bronze</strong> (15 000 F), <strong>Argent</strong> (40 000 F) ou <strong>Or</strong> (150 000 F).</li>
+            <li>Cliquez sur <strong>Enregistrer</strong>.</li>
+          </ol>
+          <p style={S.guideText}>💡 <em>Magie comptable :</em> Une écriture de recette correspondante au prix de la carte est automatiquement postée dans le grand livre du comptable !</p>
+        </div>
+      )
+    },
+    {
+      title: "3. Flux Secrétaire : Enregistrement d'Entrée",
+      content: (
+        <div>
+          <p style={S.guideText}><strong>Rôle requis :</strong> Secrétaire ou Administrateur.</p>
+          <ol style={S.guideList}>
+            <li>Allez sur l'onglet <strong style={{ color: "#10B981" }}>Accueil / Tickets</strong>.</li>
+            <li>Saisissez le nom dans le champ. S'il s'agit d'un membre existant, cochez <strong>"Client enregistré en tant que membre"</strong> (tarif : 0 F).</li>
+            <li>Si c'est un ticket visiteur d'une séance (ex: 1 000 F), laissez la case décochée et saisissez le montant.</li>
+            <li>Cliquez sur <strong>Émettre le Ticket d'Accès</strong>.</li>
+            <li>L'imprimante thermique virtuelle s'anime et génère un ticket de caisse professionnel avec QR Code. Cliquez sur <strong>Imprimer</strong> pour l'imprimer réellement.</li>
+          </ol>
+        </div>
+      )
+    },
+    {
+      title: "4. Flux Comptable : Finances & Caisse",
+      content: (
+        <div>
+          <p style={S.guideText}><strong>Rôle requis :</strong> Comptable ou Administrateur.</p>
+          <ol style={S.guideList}>
+            <li>Allez sur l'onglet <strong style={{ color: "#10B981" }}>Finances</strong>.</li>
+            <li>Visualisez le bilan global et l'état des caisses en temps réel.</li>
+            <li>Vous pouvez ajouter manuellement des écritures de recettes (+) ou dépenses (-).</li>
+            <li>Le tableau répertorie l'historique complet des flux.</li>
+          </ol>
+        </div>
+      )
+    },
+    {
+      title: "5. Flux Administrateur : Personnel & Niveaux",
+      content: (
+        <div>
+          <p style={S.guideText}><strong>Rôle requis :</strong> Administrateur.</p>
+          <ol style={S.guideList}>
+            <li>Allez sur l'onglet <strong style={{ color: "#10B981" }}>Personnel</strong>.</li>
+            <li><strong>Salariés</strong> : Vous pouvez ajouter, modifier (salaire, poste, tel), ou supprimer les employés.</li>
+            <li><strong>Accès de Connexion</strong> : Lors de la création ou de la modification d'un employé, cochez la case *Donner accès* pour lui attribuer directement un identifiant et un mot de passe !</li>
+          </ol>
+          <p style={S.guideText}>🔒 <em>Sécurité :</em> Le niveau d'accès d'un compte filtre automatiquement les onglets de la sidebar dès sa connexion.</p>
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <div style={S.guideOverlay}>
+      <div style={S.guideCard}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, borderBottom: "1px solid #E2E8F0", paddingBottom: 12 }}>
+          <h2 className="disp" style={{ color: "#0F172A", fontSize: 20 }}>🚀 Guide de démarrage interactif</h2>
+          <button style={{ background: "transparent", border: "none", color: "#94A3B8", fontSize: 22, cursor: "pointer" }} onClick={onClose}>&times;</button>
+        </div>
+
+        <div style={{ display: "flex", gap: 20, minHeight: 280, flexWrap: "wrap" }}>
+          {/* Side Menu */}
+          <div style={{ flex: "1 1 200px", display: "flex", flexDirection: "column", gap: 6, borderRight: "1px solid #E2E8F0", paddingRight: 14 }}>
+            {steps.map((s, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveStep(idx)}
+                style={{
+                  background: activeStep === idx ? "#ECFDF5" : "transparent",
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "10px 12px",
+                  color: activeStep === idx ? "#059669" : "#475569",
+                  fontSize: 13,
+                  textAlign: "left",
+                  fontWeight: activeStep === idx ? 600 : 500,
+                  width: "100%",
+                  cursor: "pointer"
+                }}
+              >
+                {s.title}
+              </button>
+            ))}
+          </div>
+
+          {/* Dynamic Content */}
+          <div style={{ flex: "2 1 300px", paddingLeft: 6 }}>
+            <h3 style={{ color: "#0F172A", fontSize: 16, marginBottom: 14 }}>{steps[activeStep].title}</h3>
+            <div>{steps[activeStep].content}</div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24, paddingTop: 14, borderTop: "1px solid #E2E8F0" }}>
+          <button
+            disabled={activeStep === 0}
+            onClick={() => setActiveStep(prev => prev - 1)}
+            style={{ ...S.btnCancel, padding: "8px 16px", cursor: activeStep === 0 ? "not-allowed" : "pointer", opacity: activeStep === 0 ? 0.4 : 1 }}
+          >
+            Précédent
+          </button>
+          {activeStep < steps.length - 1 ? (
+            <button
+              className="btn-glow"
+              style={{ ...S.btnPrimary, background: "#10B981", color: "#FFF", padding: "8px 20px" }}
+              onClick={() => setActiveStep(prev => prev + 1)}
+            >
+              Suivant
+            </button>
+          ) : (
+            <button
+              className="btn-glow"
+              style={{ ...S.btnPrimary, background: "#059669", color: "#FFF", padding: "8px 20px" }}
+              onClick={onClose}
+            >
+              C'est parti ! ➔
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
