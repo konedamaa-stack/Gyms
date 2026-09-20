@@ -780,12 +780,6 @@ export default function GymApp() {
               <div style={S.brandSub}>GESTION DE SALLE &bull; DIVO</div>
             </div>
 
-            {/* Quick Start Guide Button (Matches requested brown style) */}
-            <div style={{ paddingRight: 20 }}>
-              <button className="btn-brown-guide" onClick={() => setShowGuide(true)}>
-                <span>🚀</span> Guide de démarrage
-              </button>
-            </div>
             
             <nav style={S.nav}>
               {getFilteredTabs().map((tItem) => (
