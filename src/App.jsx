@@ -399,32 +399,34 @@ export default function GymApp() {
           animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* Quick Start Guide Button in Green */
-        .btn-green-guide {
-          background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        /* Quick Start Guide Button - Rouge dynamique Club Sport Santé */
+        .btn-guide, .btn-green-guide {
+          background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
           color: #FFFFFF;
-          border: none;
-          padding: 10px 18px;
-          border-radius: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          padding: 11px 18px;
+          border-radius: 12px;
           font-size: 13.5px;
           font-weight: 700;
+          letter-spacing: 0.3px;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
-          box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+          gap: 9px;
+          box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
           width: 100%;
-          margin-bottom: 14px;
+          margin-bottom: 16px;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .btn-green-guide:hover {
+        .btn-guide:hover, .btn-green-guide:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
-          background: linear-gradient(135deg, #059669 0%, #047857 100%);
+          box-shadow: 0 8px 24px rgba(239, 68, 68, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+          background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
         }
-        .btn-green-guide:active {
+        .btn-guide:active, .btn-green-guide:active {
           transform: translateY(0);
+          box-shadow: 0 3px 10px rgba(239, 68, 68, 0.4);
         }
 
         /* Printable thermal receipt & A4 sheet styling */
@@ -785,9 +787,30 @@ export default function GymApp() {
               <div style={S.brandSub}>GESTION DE SALLE &bull; DIVO</div>
             </div>
 
-            {/* Quick Start Guide Button (Green) */}
+            {/* Quick Start Guide Button (Red Club Sport Santé) */}
             <div style={{ paddingRight: 20 }}>
-              <button className="btn-green-guide" onClick={() => setShowGuide(true)}>
+              <button
+                className="btn-guide"
+                onClick={() => setShowGuide(true)}
+                style={{
+                  background: "linear-gradient(135deg, #EF4444 0%, #DC2626 100%)",
+                  color: "#FFFFFF",
+                  border: "1px solid rgba(255, 255, 255, 0.25)",
+                  padding: "11px 18px",
+                  borderRadius: "12px",
+                  fontSize: "13.5px",
+                  fontWeight: 700,
+                  letterSpacing: "0.3px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "9px",
+                  boxShadow: "0 4px 15px rgba(239, 68, 68, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
+                  width: "100%",
+                  marginBottom: "16px",
+                  cursor: "pointer"
+                }}
+              >
                 <span>🚀</span> Guide de démarrage
               </button>
             </div>
