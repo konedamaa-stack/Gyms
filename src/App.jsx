@@ -399,9 +399,9 @@ export default function GymApp() {
           animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        /* Quick Start Guide Button - Rouge dynamique Club Sport Santé */
+        /* Quick Start Guide Button in Green */
         .btn-guide, .btn-green-guide {
-          background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+          background: linear-gradient(135deg, #10B981 0%, #059669 100%);
           color: #FFFFFF;
           border: 1px solid rgba(255, 255, 255, 0.2);
           padding: 11px 18px;
@@ -413,7 +413,7 @@ export default function GymApp() {
           align-items: center;
           justify-content: center;
           gap: 9px;
-          box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+          box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
           width: 100%;
           margin-bottom: 16px;
           cursor: pointer;
@@ -421,12 +421,12 @@ export default function GymApp() {
         }
         .btn-guide:hover, .btn-green-guide:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(239, 68, 68, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-          background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+          box-shadow: 0 8px 24px rgba(16, 185, 129, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+          background: linear-gradient(135deg, #059669 0%, #047857 100%);
         }
         .btn-guide:active, .btn-green-guide:active {
           transform: translateY(0);
-          box-shadow: 0 3px 10px rgba(239, 68, 68, 0.4);
+          box-shadow: 0 3px 10px rgba(16, 185, 129, 0.4);
         }
 
         /* Printable thermal receipt & A4 sheet styling */
@@ -778,22 +778,22 @@ export default function GymApp() {
           <div className={`app-sidebar ${mobileMenuOpen ? "open" : ""} no-print`} style={S.sidebar}>
             <div style={S.brand}>
               <div className="disp" style={{ ...S.brandTitle, display: "flex", alignItems: "center", gap: 10 }}>
-                <img src="/logo-club-sport-sante.jpg" alt="Logo" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "contain", border: "1px solid rgba(220,38,38,0.5)" }} />
+                <img src="/logo-club-sport-sante.jpg" alt="Logo" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "contain", border: "1px solid rgba(16, 185, 129, 0.4)" }} />
                 <div>
                   <div style={{ lineHeight: 1.1 }}>CLUB SPORT SANTE</div>
-                  <div style={{ fontSize: 10, color: "#EF4444", fontWeight: 700, letterSpacing: 0.5, marginTop: 2 }}>VOTRE SANTÉ, NOTRE ÉNERGIE</div>
+                  <div style={{ fontSize: 10, color: "#10B981", fontWeight: 700, letterSpacing: 0.5, marginTop: 2 }}>VOTRE SANTÉ, NOTRE ÉNERGIE</div>
                 </div>
               </div>
               <div style={S.brandSub}>GESTION DE SALLE &bull; DIVO</div>
             </div>
 
-            {/* Quick Start Guide Button (Red Club Sport Santé) */}
+            {/* Quick Start Guide Button (Green) */}
             <div style={{ paddingRight: 20 }}>
               <button
                 className="btn-guide"
                 onClick={() => setShowGuide(true)}
                 style={{
-                  background: "linear-gradient(135deg, #EF4444 0%, #DC2626 100%)",
+                  background: "linear-gradient(135deg, #10B981 0%, #059669 100%)",
                   color: "#FFFFFF",
                   border: "1px solid rgba(255, 255, 255, 0.25)",
                   padding: "11px 18px",
@@ -805,7 +805,7 @@ export default function GymApp() {
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "9px",
-                  boxShadow: "0 4px 15px rgba(239, 68, 68, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
+                  boxShadow: "0 4px 15px rgba(16, 185, 129, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3)",
                   width: "100%",
                   marginBottom: "16px",
                   cursor: "pointer"
