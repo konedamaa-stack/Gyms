@@ -123,6 +123,9 @@ export default function GymApp() {
   const [loaded, setLoaded] = useState(false);
   const [toast, setToast] = useState("");
   const [showGuide, setShowGuide] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [clearTarget, setClearTarget] = useState({ members: true, tickets: true, tx: false });
+  const [isClearing, setIsClearing] = useState(false);
 
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [loginError, setLoginError] = useState("");
@@ -232,11 +235,34 @@ export default function GymApp() {
     return [];
   };
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    const foundUser = users.find(
-      (u) => u.username.toLowerCase() === loginForm.username.toLowerCase() && u.password === loginForm.password
+    const inputUser = (loginForm.username || "").trim().toLowerCase();
+    const inputPass = (loginForm.password || "").trim();
+
+    // Check in current state or fallback to USERS_SEED
+    let allUsers = users && users.length > 0 ? users : USERS_SEED;
+    
+    let foundUser = allUsers.find(
+      (u) => (u.username || "").trim().toLowerCase() === inputUser && 
+             ((u.password || "").trim() === inputPass || (u.password || "") === loginForm.password)
     );
+
+    // If not found in local state, fetch latest users from Supabase in real-time
+    if (!foundUser) {
+      try {
+        const { data: remoteUsers } = await supabase.from("users").select("*");
+        if (remoteUsers && remoteUsers.length > 0) {
+          setUsers(remoteUsers);
+          foundUser = remoteUsers.find(
+            (u) => (u.username || "").trim().toLowerCase() === inputUser &&
+                   ((u.password || "").trim() === inputPass || (u.password || "") === loginForm.password)
+          );
+        }
+      } catch (err) {
+        console.error("Login verification error:", err);
+      }
+    }
 
     if (foundUser) {
       setUser(foundUser);
@@ -306,6 +332,76 @@ export default function GymApp() {
         console.error(err);
         triggerToast("Échec de la réinitialisation");
       }
+    }
+  };
+
+  const openClearModal = (mode = "both") => {
+    if (mode === "membres") {
+      setClearTarget({ members: true, tickets: false, tx: false });
+    } else if (mode === "tickets") {
+      setClearTarget({ members: false, tickets: true, tx: false });
+    } else {
+      setClearTarget({ members: true, tickets: true, tx: false });
+    }
+    setShowClearModal(true);
+  };
+
+  const handleExecuteClear = async () => {
+    if (!clearTarget.members && !clearTarget.tickets && !clearTarget.tx) {
+      triggerToast("Veuillez sélectionner au moins une catégorie à vider.");
+      return;
+    }
+
+    setIsClearing(true);
+    try {
+      const promises = [];
+      if (clearTarget.members) {
+        promises.push(supabase.from("members").delete().neq("id", ""));
+      }
+      if (clearTarget.tickets) {
+        promises.push(supabase.from("tickets").delete().neq("id", ""));
+      }
+      if (clearTarget.tx) {
+        promises.push(
+          supabase.from("tx").delete().or(
+            "description.ilike.%abonnement%,description.ilike.%ticket%,description.ilike.%membre%,description.ilike.%visiteur%"
+          )
+        );
+      }
+
+      const results = await Promise.all(promises);
+      const errors = results.filter(r => r && r.error);
+      if (errors.length > 0) {
+        console.error("Errors while clearing:", errors);
+        triggerToast("Erreur lors de la suppression sur Supabase");
+        setIsClearing(false);
+        return;
+      }
+
+      if (clearTarget.members) {
+        setMembers([]);
+      }
+      if (clearTarget.tickets) {
+        setTickets([]);
+      }
+      if (clearTarget.tx) {
+        setTx(prev => prev.filter(t => {
+          const desc = (t.description || "").toLowerCase();
+          return !desc.includes("abonnement") && !desc.includes("ticket") && !desc.includes("membre") && !desc.includes("visiteur");
+        }));
+      }
+
+      setShowClearModal(false);
+      const labels = [];
+      if (clearTarget.members) labels.push("Membres & Cartes");
+      if (clearTarget.tickets) labels.push("Accueil / Tickets");
+      if (clearTarget.tx) labels.push("Finances associées");
+      triggerToast(`Données vidées avec succès : ${labels.join(", ")}`);
+    } catch (err) {
+      console.error("Erreur vidage:", err);
+      triggerToast("Échec de la suppression");
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -717,6 +813,19 @@ export default function GymApp() {
         <GuideModal onClose={() => setShowGuide(false)} />
       )}
 
+      {/* Clear Data Modal (Membres & Cartes / Accueil / Tickets) */}
+      {showClearModal && (
+        <ClearDataModal
+          onClose={() => setShowClearModal(false)}
+          onConfirm={handleExecuteClear}
+          clearTarget={clearTarget}
+          setClearTarget={setClearTarget}
+          membersCount={members.length}
+          ticketsCount={tickets.length}
+          isClearing={isClearing}
+        />
+      )}
+
       {/* View router switcher */}
       {view === "affiche" && (
         <PublicAfficheView 
@@ -844,6 +953,31 @@ export default function GymApp() {
               </div>
 
               <button
+                type="button"
+                onClick={() => openClearModal("both")}
+                className="btn-danger-glow"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  background: "#FEF2F2",
+                  border: "1px solid #FCA5A5",
+                  color: "#DC2626",
+                  borderRadius: 10,
+                  padding: "9px 12px",
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  width: "100%",
+                  marginBottom: 12,
+                  justifyContent: "center",
+                  boxShadow: "0 2px 6px rgba(220, 38, 38, 0.1)"
+                }}
+              >
+                <span>🗑️</span> Vider Membres & Tickets
+              </button>
+
+              <button
                 onClick={handleLogout}
                 style={{
                   display: "flex",
@@ -880,6 +1014,7 @@ export default function GymApp() {
                 resetApp={resetApp}
                 cardTiers={cardTiers}
                 setTab={setTab}
+                onOpenClearModal={openClearModal}
               />
             )}
             
@@ -892,6 +1027,7 @@ export default function GymApp() {
                 cardTiers={cardTiers}
                 tx={tx}
                 currentUser={user}
+                onOpenClearModal={openClearModal}
               />
             )}
             
@@ -915,6 +1051,7 @@ export default function GymApp() {
                 triggerToast={triggerToast}
                 currentUser={user}
                 cardTiers={cardTiers}
+                onOpenClearModal={openClearModal}
               />
             )}
             
@@ -950,6 +1087,280 @@ export default function GymApp() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+// ==========================================
+// CLEAR DATA MODAL (MEMBRES & TICKETS)
+// ==========================================
+function ClearDataModal({
+  onClose,
+  onConfirm,
+  clearTarget,
+  setClearTarget,
+  membersCount,
+  ticketsCount,
+  isClearing
+}) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(15, 23, 42, 0.65)",
+        backdropFilter: "blur(6px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 9999,
+        padding: 16
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isClearing) onClose();
+      }}
+    >
+      <div
+        style={{
+          background: "#FFFFFF",
+          borderRadius: 20,
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+          maxWidth: 490,
+          width: "100%",
+          padding: 28,
+          position: "relative"
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
+          <div
+            style={{
+              width: 50,
+              height: 50,
+              borderRadius: "50%",
+              background: "#FEE2E2",
+              color: "#DC2626",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 24,
+              flexShrink: 0
+            }}
+          >
+            🗑️
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: "#0F172A" }}>
+              Vider les données de test
+            </h3>
+            <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#64748B" }}>
+              Sélectionnez les registres à vider sur Supabase
+            </p>
+          </div>
+        </div>
+
+        {/* Info banner */}
+        <div
+          style={{
+            background: "#FFFBEB",
+            border: "1px solid #FDE68A",
+            borderRadius: 10,
+            padding: "10px 14px",
+            fontSize: 12.5,
+            color: "#92400E",
+            marginBottom: 20,
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 8,
+            lineHeight: 1.45
+          }}
+        >
+          <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
+          <div>
+            Cette action effacera les données sélectionnées. Vos comptes utilisateurs (Super Admin, DG, etc.) et salariés <strong>restent protégés et intacts</strong>.
+          </div>
+        </div>
+
+        {/* Selection items */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+          {/* Option 1: Membres & Cartes */}
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 16px",
+              borderRadius: 12,
+              border: clearTarget.members ? "2px solid #EF4444" : "1px solid #E2E8F0",
+              background: clearTarget.members ? "#FEF2F2" : "#F8FAFC",
+              cursor: isClearing ? "not-allowed" : "pointer",
+              transition: "all 0.15s ease"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <input
+                type="checkbox"
+                disabled={isClearing}
+                checked={clearTarget.members}
+                onChange={(e) => setClearTarget({ ...clearTarget, members: e.target.checked })}
+                style={{ width: 18, height: 18, accentColor: "#DC2626", cursor: "pointer" }}
+              />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "#0F172A" }}>
+                  Membres & Cartes
+                </div>
+                <div style={{ fontSize: 12, color: "#64748B" }}>
+                  Fiches adhérents, questionnaires médicaux & cartes
+                </div>
+              </div>
+            </div>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                padding: "3px 8px",
+                borderRadius: 20,
+                background: clearTarget.members ? "#FEE2E2" : "#E2E8F0",
+                color: clearTarget.members ? "#DC2626" : "#64748B"
+              }}
+            >
+              {membersCount} adhérent{membersCount > 1 ? "s" : ""}
+            </span>
+          </label>
+
+          {/* Option 2: Accueil / Tickets */}
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 16px",
+              borderRadius: 12,
+              border: clearTarget.tickets ? "2px solid #EF4444" : "1px solid #E2E8F0",
+              background: clearTarget.tickets ? "#FEF2F2" : "#F8FAFC",
+              cursor: isClearing ? "not-allowed" : "pointer",
+              transition: "all 0.15s ease"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <input
+                type="checkbox"
+                disabled={isClearing}
+                checked={clearTarget.tickets}
+                onChange={(e) => setClearTarget({ ...clearTarget, tickets: e.target.checked })}
+                style={{ width: 18, height: 18, accentColor: "#DC2626", cursor: "pointer" }}
+              />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "#0F172A" }}>
+                  Accueil / Tickets
+                </div>
+                <div style={{ fontSize: 12, color: "#64748B" }}>
+                  Passages guichet, tickets séances & pass VIP
+                </div>
+              </div>
+            </div>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                padding: "3px 8px",
+                borderRadius: 20,
+                background: clearTarget.tickets ? "#FEE2E2" : "#E2E8F0",
+                color: clearTarget.tickets ? "#DC2626" : "#64748B"
+              }}
+            >
+              {ticketsCount} ticket{ticketsCount > 1 ? "s" : ""}
+            </span>
+          </label>
+
+          {/* Option 3: Optional linked transactions */}
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "10px 16px",
+              borderRadius: 12,
+              border: clearTarget.tx ? "2px solid #EF4444" : "1px solid #E2E8F0",
+              background: clearTarget.tx ? "#FEF2F2" : "#F8FAFC",
+              cursor: isClearing ? "not-allowed" : "pointer",
+              transition: "all 0.15s ease"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <input
+                type="checkbox"
+                disabled={isClearing}
+                checked={clearTarget.tx}
+                onChange={(e) => setClearTarget({ ...clearTarget, tx: e.target.checked })}
+                style={{ width: 18, height: 18, accentColor: "#DC2626", cursor: "pointer" }}
+              />
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 13, color: "#334155" }}>
+                  Vider aussi les recettes financières liées
+                </div>
+                <div style={{ fontSize: 11.5, color: "#64748B" }}>
+                  Remettre le solde des inscriptions & tickets à 0 F
+                </div>
+              </div>
+            </div>
+          </label>
+        </div>
+
+        {/* Buttons */}
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            disabled={isClearing}
+            onClick={onClose}
+            style={{
+              padding: "10px 18px",
+              borderRadius: 8,
+              border: "1px solid #CBD5E1",
+              background: "#FFFFFF",
+              color: "#475569",
+              fontWeight: 700,
+              fontSize: 13.5,
+              cursor: isClearing ? "not-allowed" : "pointer"
+            }}
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            disabled={isClearing || (!clearTarget.members && !clearTarget.tickets && !clearTarget.tx)}
+            onClick={onConfirm}
+            style={{
+              padding: "10px 20px",
+              borderRadius: 8,
+              border: "none",
+              background: isClearing || (!clearTarget.members && !clearTarget.tickets && !clearTarget.tx)
+                ? "#FCA5A5"
+                : "linear-gradient(135deg, #DC2626, #B91C1C)",
+              color: "#FFFFFF",
+              fontWeight: 800,
+              fontSize: 13.5,
+              cursor: isClearing || (!clearTarget.members && !clearTarget.tickets && !clearTarget.tx)
+                ? "not-allowed"
+                : "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              boxShadow: "0 4px 12px rgba(220, 38, 38, 0.3)"
+            }}
+          >
+            {isClearing ? (
+              <>
+                <span>⏳</span> Vidage en cours...
+              </>
+            ) : (
+              <>
+                <span>🗑️</span> Vider définitivement
+              </>
+            )}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2502,7 +2913,7 @@ function StatKpi({ label, value, accent, subtext, icon }) {
 // ==========================================
 // DASHBOARD VIEW
 // ==========================================
-function Dashboard({ members, staff, revenuTotal, depenses, salairesVerses, ticketsAujourdhui, solde, tickets, tx, resetApp, cardTiers, setTab }) {
+function Dashboard({ members, staff, revenuTotal, depenses, salairesVerses, ticketsAujourdhui, solde, tickets, tx, resetApp, cardTiers, setTab, onOpenClearModal }) {
   const activeCoaches = staff.filter(s => s.role === "Coach").length;
   const [periodType, setPeriodType] = useState("jour"); // "jour" or "semaine"
   const [revenuePeriod, setRevenuePeriod] = useState("today"); // "today" | "week" | "month" | "year" | "all"
@@ -2656,6 +3067,29 @@ function Dashboard({ members, staff, revenuTotal, depenses, salairesVerses, tick
               <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line>
             </svg>
             Enregistrer une entrée
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onOpenClearModal ? onOpenClearModal("both") : null}
+            title="Vider Membres & Cartes et Accueil / Tickets"
+            className="btn-danger-glow"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: "#FEF2F2",
+              border: "1px solid #FCA5A5",
+              color: "#DC2626",
+              borderRadius: 10,
+              padding: "10px 15px",
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: "0 2px 6px rgba(220, 38, 38, 0.1)"
+            }}
+          >
+            <span>🗑️</span> Vider Membres & Tickets
           </button>
         </div>
       </div>
@@ -2883,7 +3317,7 @@ function Dashboard({ members, staff, revenuTotal, depenses, salairesVerses, tick
 // ==========================================
 // MEMBRES & LOYALTY CARDS VIEW
 // ==========================================
-function Membres({ members, setMembers, setTx, triggerToast, cardTiers, tx, currentUser }) {
+function Membres({ members, setMembers, setTx, triggerToast, cardTiers, tx, currentUser, onOpenClearModal }) {
   const isAdmin = currentUser && currentUser.role === "Administrateur";
   const [activeReceipt, setActiveReceipt] = useState(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -3381,7 +3815,30 @@ function Membres({ members, setMembers, setTx, triggerToast, cardTiers, tx, curr
           <h1 style={{ ...S.pageTitle, margin: 0 }}>Gestion des Membres</h1>
           <p style={{ fontSize: 13, color: "#64748B", margin: "4px 0 0 0" }}>Adhérents, fiches de renseignement, questionnaire médical officiel et cartes d'accès.</p>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <button
+            type="button"
+            className="btn-danger-glow"
+            onClick={() => onOpenClearModal ? onOpenClearModal("membres") : null}
+            title="Vider la liste des membres et cartes"
+            style={{
+              background: "#FEF2F2",
+              border: "1px solid #FCA5A5",
+              color: "#DC2626",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "9px 15px",
+              fontSize: 13,
+              fontWeight: 800,
+              borderRadius: 8,
+              boxShadow: "0 2px 8px rgba(220, 38, 38, 0.12)",
+              cursor: "pointer"
+            }}
+          >
+            <span>🗑️</span> Vider Membres & Cartes
+          </button>
+
           <button
             type="button"
             className="btn-glow"
@@ -6146,7 +6603,7 @@ function Planning({ schedule, setSchedule, staff, triggerToast, currentUser }) {
 // ==========================================
 // ACCUEIL / TICKETS (SECRETAIRE)
 // ==========================================
-function Accueil({ members, setMembers, tickets, setTickets, setTx, triggerToast, currentUser, cardTiers = [] }) {
+function Accueil({ members, setMembers, tickets, setTickets, setTx, triggerToast, currentUser, cardTiers = [], onOpenClearModal }) {
   const ticketTier = cardTiers?.find(t => 
     t.duration === 0 ||
     t.key?.toLowerCase().includes("ticket unique") || 
@@ -6513,7 +6970,30 @@ function Accueil({ members, setMembers, tickets, setTickets, setTx, triggerToast
           <h1 style={{ ...S.pageTitle, margin: 0 }}>Guichet & Accueil</h1>
           <p style={{ fontSize: 13, color: "#64748B", margin: "4px 0 0 0" }}>Enregistrement direct des passages membres, tickets visiteurs et pass VIP.</p>
         </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <button
+            type="button"
+            className="btn-danger-glow"
+            onClick={() => onOpenClearModal ? onOpenClearModal("tickets") : null}
+            title="Vider le registre des tickets et entrées"
+            style={{
+              background: "#FEF2F2",
+              border: "1px solid #FCA5A5",
+              color: "#DC2626",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "9px 15px",
+              fontSize: 13,
+              fontWeight: 800,
+              borderRadius: 8,
+              boxShadow: "0 2px 8px rgba(220, 38, 38, 0.12)",
+              cursor: "pointer"
+            }}
+          >
+            <span>🗑️</span> Vider Accueil & Tickets
+          </button>
+
           <button
             type="button"
             className="btn-glow"
